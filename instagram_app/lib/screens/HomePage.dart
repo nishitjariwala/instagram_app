@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../widgets/separator.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'GetUsername.dart';
+import 'FeedPage.dart';
+import 'SearchPage.dart';
+import 'UploadPost.dart';
+import 'NotificationPage.dart';
+import 'ProfilePage.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
@@ -21,6 +27,9 @@ class _HomePageState extends State<HomePage> {
   bool progress = false;
 
   final GlobalKey<FormState> _FormKey = GlobalKey<FormState>();
+  int pageNum = 0;
+  int pageIndex = 0;
+  PageController pageController;
 
 //  TODO: For Login & Signup Page
   bool isEmail(String value) {
@@ -106,8 +115,7 @@ class _HomePageState extends State<HomePage> {
         print("done");
         isSignedIn = true;
       });
-    }
-    else{
+    } else {
       setState(() {
         print("signout");
         isSignedIn = false;
@@ -278,18 +286,53 @@ class _HomePageState extends State<HomePage> {
     ;
   }
 
+  pageChange(int pageIndex) {
+    setState(() {
+      this.pageIndex = pageIndex;
+    });
+  }
+
+  pageChangeAnimation(int pageIndex) {
+    pageController.animateToPage(pageIndex,
+        duration: Duration(microseconds: 400), curve: Curves.bounceInOut);
+  }
+
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
 //  TODO: Build HomeScreen Or Navigation Bar
   displayHomeScreen() {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("HomeScreen"),
-      ),
-      body: RaisedButton(
-        onPressed: (){
-          signOut();
-        },
-        child: Text("SignOut"),
-      ),
+    return SafeArea(
+      child: Scaffold(
+          body: PageView(
+            children: <Widget>[
+              FeedPage(),
+              SearchPage(),
+              UploadPost(),
+              NotificationPage(),
+              ProfilePage(),
+            ],
+            controller: pageController,
+            onPageChanged: pageChange,
+            physics: NeverScrollableScrollPhysics(),
+          ),
+          bottomNavigationBar: CupertinoTabBar(
+            currentIndex: pageIndex,
+            onTap: pageChangeAnimation,
+            activeColor: Colors.black,
+            inactiveColor: Colors.grey,
+            backgroundColor: Colors.grey[100],
+            items: [
+              BottomNavigationBarItem(icon: Icon(Icons.home)),
+              BottomNavigationBarItem(icon: Icon(Icons.search)),
+              BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline)),
+              pageIndex==3 ? BottomNavigationBarItem(icon: Icon(Icons.favorite)):BottomNavigationBarItem(icon: Icon(Icons.favorite_border)),
+              BottomNavigationBarItem(icon: Icon(Icons.person)),
+            ],
+            border: Border(top: BorderSide(color: Colors.grey, width: 0.3)),
+          )),
     );
   }
 
@@ -297,6 +340,8 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    pageController = PageController();
+
     googleSignIn.onCurrentUserChanged.listen((googleSignInAccount) {
       controlSignIn(googleSignInAccount);
     });
