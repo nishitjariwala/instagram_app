@@ -11,9 +11,15 @@ import 'SearchPage.dart';
 import 'UploadPost.dart';
 import 'NotificationPage.dart';
 import 'ProfilePage.dart';
+import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_signin_button/flutter_signin_button.dart';
+import '../User/user.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
+final auth =FirebaseAuth.instance;
+User currentUser;
 
 class HomePage extends StatefulWidget {
   @override
@@ -23,8 +29,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSignedIn = false;
   String email;
+  String username;
+  String profileName;
   String password;
   bool progress = false;
+  int flag = 1;
 
   final GlobalKey<FormState> _FormKey = GlobalKey<FormState>();
   int pageNum = 0;
@@ -48,10 +57,11 @@ class _HomePageState extends State<HomePage> {
           filled: true,
           fillColor: Colors.white,
           hintText: 'Email',
+          labelText: 'Email',
           contentPadding:
               const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
           focusedBorder: OutlineInputBorder(
-            borderSide: new BorderSide(color: Colors.grey),
+            borderSide: new BorderSide(color: Colors.white),
           ),
           enabledBorder: UnderlineInputBorder(
             borderSide: new BorderSide(color: Colors.grey[200]),
@@ -69,6 +79,78 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget nameField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      child: TextFormField(
+        keyboardType: TextInputType.emailAddress,
+        decoration: new InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          hintText: 'Full Name',
+          labelText: 'Full Name',
+          contentPadding:
+              const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
+          focusedBorder: OutlineInputBorder(
+            borderSide: new BorderSide(color: Colors.white),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: new BorderSide(color: Colors.grey[200]),
+          ),
+        ),
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'Enter Full Name';
+          } else {
+            return null;
+          }
+          ;
+        },
+        onSaved: (String value) {
+          profileName = value;
+        },
+      ),
+    );
+  }
+
+  Widget usernameField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      child: TextFormField(
+        keyboardType: TextInputType.emailAddress,
+
+        decoration: new InputDecoration(
+
+          filled: true,
+          fillColor: Colors.white,
+          hintText: 'Username',
+          labelText: 'Username',
+          contentPadding:
+              const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
+          focusedBorder: OutlineInputBorder(
+            borderSide: new BorderSide(color: Colors.white),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: new BorderSide(color: Colors.grey[200]),
+          ),
+        ),
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'Enter username';
+          } else if (value.length < 6) {
+            return 'Minimum of username length is 6';
+          } else {
+            return null;
+          }
+          ;
+        },
+        onSaved: (String value) {
+          username = value;
+        },
+      ),
+    );
+  }
+
   Widget passwordField() {
     return TextFormField(
       obscureText: true,
@@ -76,10 +158,11 @@ class _HomePageState extends State<HomePage> {
         filled: true,
         fillColor: Colors.white,
         hintText: 'Password',
+        labelText: 'password',
         contentPadding:
             const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
         focusedBorder: OutlineInputBorder(
-          borderSide: new BorderSide(color: Colors.grey),
+          borderSide: new BorderSide(color: Colors.white),
         ),
         enabledBorder: UnderlineInputBorder(
           borderSide: new BorderSide(color: Colors.grey[200]),
@@ -105,6 +188,10 @@ class _HomePageState extends State<HomePage> {
 
   signOut() {
     googleSignIn.signOut();
+    auth.signOut();
+    setState(() {
+      isSignedIn = false;
+    });
   }
 
   controlSignIn(GoogleSignInAccount googleSignInAccount) async {
@@ -124,6 +211,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   saveUserInfo() async {
+
     final GoogleSignInAccount googleSignInAccount = googleSignIn.currentUser;
     DocumentSnapshot documentSnapshot =
         await userDb.document(googleSignInAccount.id).get();
@@ -131,21 +219,24 @@ class _HomePageState extends State<HomePage> {
       final username = await Navigator.push(
           context, MaterialPageRoute(builder: (context) => GetUserName()));
       print("print username" + username.toString());
-
-      userDb.document(googleSignInAccount.id).setData({
-        'id': googleSignInAccount.id,
-        'profileName': googleSignInAccount.displayName,
-        'username': username,
-        'url': googleSignInAccount.photoUrl,
-        'email': googleSignInAccount.email,
-        'bio': "",
-        'report': 0,
-      });
-
+      if(username!=null){
+        userDb.document(googleSignInAccount.id).setData({
+          'id': googleSignInAccount.id,
+          'profileName': googleSignInAccount.displayName,
+          'username': username,
+          'url': googleSignInAccount.photoUrl,
+          'email': googleSignInAccount.email,
+          'bio': "",
+          'report': 0,
+        });
+      }
       documentSnapshot = await userDb.document(googleSignInAccount.id).get();
     }
-//    currentUser = User.fromDocument(documentSnapshot);
-//    Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
+    setState(() {
+      currentUser = User.fromDocument(documentSnapshot);
+
+    });
+
   }
 
 //  TODO: Build Login Screen
@@ -210,6 +301,38 @@ class _HomePageState extends State<HomePage> {
                                       return;
                                     }
                                     _FormKey.currentState.save();
+                                    try {
+                                      final user = await auth
+                                          .signInWithEmailAndPassword(
+                                          email: email, password: password);
+                                      if (user != null) {
+
+                                        var id;
+                                        await userDb.where(
+                                            'email',
+                                            isEqualTo: email
+                                        ).getDocuments().then((event) {
+                                          if (event.documents.isNotEmpty) {
+                                           id = event.documents.single.data['id'];
+                                          }
+
+                                        }).catchError((e) => print("error fetching data: $e"));
+                                        DocumentSnapshot documentSnapshot = await userDb.document(id).get();//if it is a single document
+                                        if(documentSnapshot.exists){
+                                          setState(() {
+                                            currentUser = User.fromDocument(documentSnapshot);
+                                            isSignedIn = true;
+                                          });
+                                        }
+                                      }
+
+                                    }
+                                    catch(e){
+                                      print(e);
+                                    }
+
+
+
                                   },
                                   elevation: 2,
                                   color: Colors.blue,
@@ -269,6 +392,9 @@ class _HomePageState extends State<HomePage> {
                                   recognizer: new TapGestureRecognizer()
                                     ..onTap = () {
                                       print("Go to Signup Screen");
+                                      setState(() {
+                                        flag = 0;
+                                      });
                                     }),
                             ],
                           ),
@@ -284,6 +410,160 @@ class _HomePageState extends State<HomePage> {
       )),
     );
     ;
+  }
+
+  displaySignupScreen() {
+    var uuid = Uuid();
+    var id = uuid.v4();
+    return SafeArea(
+      child: Scaffold(
+        body: SingleChildScrollView(
+          child: Container(
+            child: Center(
+              child: Form(
+                key: _FormKey,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        "Instagram",
+                        style: TextStyle(
+                          fontSize: 70,
+                          color: Colors.black,
+                          fontFamily: 'Billabong',
+                        ),
+                      ),
+                      Text("Sign up to see photos and videos from your friends.",style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 18,
+
+                        ),
+                      ),
+
+                      SignInButtonBuilder(
+                        text: 'Sign in with Email',
+                        icon: FontAwesomeIcons.google,
+                        onPressed: () {
+                          signIn();
+                        },
+                        backgroundColor: Colors.blue,
+                      ),
+                      Separator(),
+                      emailField(),
+                      nameField(),
+                      usernameField(),
+                      passwordField(),
+
+                      SizedBox(
+                        height: 30,
+                      ),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: GestureDetector(
+                              child: RaisedButton(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  onPressed: () async {
+                                    setState(() {
+                                      progress = true;
+                                    });
+                                    if (!_FormKey.currentState.validate()) {
+                                      return;
+                                    }
+                                    _FormKey.currentState.save();
+
+                                    try {
+                                      final newUser = await auth
+                                          .createUserWithEmailAndPassword(
+                                          email: email, password: password);
+                                      if(newUser!=null){
+                                        userDb.document(id).setData({
+                                          'bio': '',
+                                          'email': email,
+                                          'id': id,
+                                          'profileName': profileName,
+                                          'username': username,
+                                          'url': 'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
+                                          'report': 0,
+                                        });
+                                      }
+                                      if(newUser!=null)
+                                      {
+                                        DocumentSnapshot documentSnapshot = await userDb.document(id).get();
+
+                                        setState(() {
+                                          currentUser = User.fromDocument(documentSnapshot);
+                                          isSignedIn = true;
+                                        });
+                                      }
+
+
+                                    }
+                                    catch(e)
+                                    {
+                                      print(e);
+                                    }
+
+
+
+                                  },
+                                  elevation: 2,
+                                  color: Colors.blue,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      "Sign up",
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 15),
+                                    ),
+                                  ),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: RichText(
+                          text: TextSpan(
+                            style: TextStyle(color: Colors.black, fontSize: 15),
+                            /*defining default style is optional */
+                            children: <TextSpan>[
+                              TextSpan(
+                                text: "Already have an account? ",
+                              ),
+                              TextSpan(
+                                  text: 'Sign in',
+                                  style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold),
+                                  recognizer: new TapGestureRecognizer()
+                                    ..onTap = () {
+                                      print("Go to Signin Screen");
+                                      setState(() {
+                                        flag=1;
+                                      });
+                                    }),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 50,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   pageChange(int pageIndex) {
@@ -308,7 +588,13 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
           body: PageView(
             children: <Widget>[
-              FeedPage(),
+//              FeedPage(),
+              RaisedButton(
+                child: Text(currentUser.username),
+                onPressed: (){
+                  signOut();
+                },
+              ),
               SearchPage(),
               UploadPost(),
               NotificationPage(),
@@ -328,8 +614,11 @@ class _HomePageState extends State<HomePage> {
               BottomNavigationBarItem(icon: Icon(Icons.home)),
               BottomNavigationBarItem(icon: Icon(Icons.search)),
               BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline)),
-              pageIndex==3 ? BottomNavigationBarItem(icon: Icon(Icons.favorite)):BottomNavigationBarItem(icon: Icon(Icons.favorite_border)),
+              pageIndex == 3
+                  ? BottomNavigationBarItem(icon: Icon(Icons.favorite))
+                  : BottomNavigationBarItem(icon: Icon(Icons.favorite_border)),
               BottomNavigationBarItem(icon: Icon(Icons.person)),
+
             ],
             border: Border(top: BorderSide(color: Colors.grey, width: 0.3)),
           )),
@@ -356,6 +645,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return isSignedIn ? displayHomeScreen() : displayLoginScreen();
+    return isSignedIn
+        ? displayHomeScreen()
+        : flag == 1 ? displayLoginScreen() : displaySignupScreen();
   }
 }
