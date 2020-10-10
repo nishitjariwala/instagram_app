@@ -15,9 +15,16 @@ import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
 import '../User/user.dart';
+import '../widgets/Progress.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
+final postsDb = Firestore.instance.collection("posts");
+
+
+final StorageReference postImageReference = FirebaseStorage.instance.ref().child("posts");
+
 final auth =FirebaseAuth.instance;
 User currentUser;
 bool isSignedIn = false;
@@ -234,6 +241,7 @@ class _HomePageState extends State<HomePage> {
       }
       documentSnapshot = await userDb.document(googleSignInAccount.id).get();
     }
+
     setState(() {
       currentUser = User.fromDocument(documentSnapshot);
 
@@ -586,13 +594,14 @@ class _HomePageState extends State<HomePage> {
 
 //  TODO: Build HomeScreen Or Navigation Bar
   displayHomeScreen() {
-    return SafeArea(
+    return currentUser==null? circularProgress() :SafeArea(
       child: Scaffold(
           body: PageView(
             children: <Widget>[
-              FeedPage(),
+              FeedPage(currentUser: currentUser,),
+
               SearchPage(),
-              UploadPost(),
+              UploadPage(),
               NotificationPage(),
               ProfilePage(),
             ],

@@ -19,6 +19,7 @@ class _GetUserNameState extends State<GetUserName> {
 
   submitUserName(){
     final form = _formKey.currentState;
+
     if(form.validate()){
       form.save();
 
@@ -51,7 +52,20 @@ class _GetUserNameState extends State<GetUserName> {
                       TextFormField(
                         style: TextStyle(
                           color: Colors.black,
-
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          hintText: 'UserName',
+                          labelText: 'UserName',
+                          contentPadding:
+                          const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: new BorderSide(color: Colors.white),
+                          ),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: new BorderSide(color: Colors.grey[200]),
+                          ),
                         ),
                         validator: (value){
                           if(value.trim().length<5 || value.isEmpty){
