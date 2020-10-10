@@ -83,14 +83,9 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Post1"),
+        title: Text("Upload Post"),
         backgroundColor: Colors.white,
-        leading: IconButton(
-            icon: Icon(Icons.close),
-            onPressed: () {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => HomePage()));
-            }),
+
       ),
       body: Container(
         width: size,
@@ -99,7 +94,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Icon(
-              Icons.photo_library,
+              Icons.add_photo_alternate,
               size: size * 0.7,
               color: Colors.grey[300],
             ),
@@ -107,7 +102,10 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
               onPressed: () {
                 selectPhoto(context);
               },
-              child: Text("Upload Image"),
+              child: Text("Select Image",style: TextStyle(color: Colors.white),),
+              color: Colors.blue,
+              elevation: 5,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             )
           ],
         ),
@@ -141,7 +139,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
       "username":currentUser.username,
       "description":description,
       "location":location,
-      "url":url,
+      "post_url":url,
     });
   }
 
@@ -149,7 +147,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
     setState(() {
       uploading=true;
     });
-    await compressPhoto();
+
 
     String imageUrl = await uploadPhoto(image_file);
     print("Uploading");
@@ -177,7 +175,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
             image_file=null;
           });
         }),
-        title: Text("Post"),
+        title: Text("New Post"),
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -271,297 +269,6 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
   Widget build(BuildContext context) {
     return image_file == null
         ? displaySelectImageScreen()
-        : displayUploadPostScreen();
+        : image_file == null? circularProgress():displayUploadPostScreen();
   }
 }
-class UploadPage extends StatefulWidget {
-
-  @override
-  _UploadPageState createState() => _UploadPageState();
-}
-
-class _UploadPageState extends State<UploadPage> with AutomaticKeepAliveClientMixin<UploadPage>{
-  File file;
-
-  bool uploading=false;
-  String postId=Uuid().v4();
-  bool get wantKeepAlive=>true;
-
-
-
-
-
-  TextEditingController captionEditionController = TextEditingController();
-  TextEditingController locationEditionController = TextEditingController();
-
-  // TODO: To open Camera when Click on open Camera
-
-  openCamera()async{
-    Navigator.pop(context);
-    File imageFile = await ImagePicker.pickImage(
-      source: ImageSource.camera,
-
-    );
-    setState(() {
-      this.file=imageFile;
-    });
-  }
-  // TODO: To open Gallery when Click on open Gallery
-
-  openGallery()async{
-    Navigator.pop(context);
-    File imageFile = await ImagePicker.pickImage(
-      source: ImageSource.gallery,
-
-    );
-    setState(() {
-      this.file=imageFile;
-    });
-  }
-  //TODO: when click on back button clear the post
-  removePost(){
-    locationEditionController.clear()
-    ;captionEditionController.clear();
-    setState(() {
-      file = null;
-    });
-  }
-
-
-  // TODO: CompressImage
-
-  compressPhoto()async{
-
-    final dir = await getTemporaryDirectory();
-    final path = dir.path;
-    ImD.Image imageFile = ImD.decodeImage(file.readAsBytesSync());
-    final compressedImage = File('$path/img_$postId')..writeAsBytesSync(ImD.encodeJpg(imageFile,quality: 90));
-    setState(() {
-      file=compressedImage;
-    });
-  }
-
-  // TODO: Upload File to Firebase Storage
-  Future<String> uploadPhoto(file)async{
-
-    StorageUploadTask storageUploadTask = postImageReference.child("post_$postId.jpg").putFile(file);
-    StorageTaskSnapshot storageTaskSnapshot = await storageUploadTask.onComplete;
-    String imageUrl = await storageTaskSnapshot.ref.getDownloadURL();
-    return imageUrl;
-  }
-
-  savePostInfoToDB(String url, String location, String description){
-    postsDb.document(currentUser.id).collection("userPosts").document(postId).setData({
-      "postId" : postId,
-      "ownerId" : currentUser.id,
-      "timestamp":DateTime.now(),
-      "likes": {},
-      "username":currentUser.username,
-      "description":description,
-      "location":location,
-      "url":url,
-    });
-  }
-
-  controlUploadAndSave()async{
-    setState(() {
-      uploading=true;
-    });
-
-
-    String imageUrl = await uploadPhoto(file);
-    print("Uploading");
-
-    savePostInfoToDB(imageUrl,locationEditionController.text,captionEditionController.text);
-    print("Uploaded Scccessfully");
-
-    locationEditionController.clear();
-    captionEditionController.clear();
-    setState(() {
-      file=null;
-      uploading = false;
-      postId = Uuid().v4();
-
-    });
-
-
-  }
-  takePhoto(nContext) {
-    return showDialog(
-        context: nContext,
-        builder: (context){
-          return SimpleDialog(
-            backgroundColor: Colors.white,
-            title: Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Text("New Post", style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold,),),
-
-            ),
-            children: <Widget>[
-              SimpleDialogOption(
-                child: Text("Open Camera",),
-
-                onPressed: (){
-                  print("open Camera");
-                  openCamera();
-                },
-              ),
-
-              SimpleDialogOption(
-                child: Text("Open from Gallery"),
-                onPressed: (){
-                  print("Open Gallery");
-                  openGallery();
-                },
-              ),
-              SimpleDialogOption(
-                child: Text("Cancel"),
-                onPressed: (){
-                  print("Cancel Task");
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          );
-        }
-    );
-  }
-
-  Widget displayUploadScreen() {
-    return Container(
-//      color: Colors.grey.withOpacity(0.5),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(
-            Icons.add_photo_alternate,
-            size: 200,
-            color: Colors.grey,
-          ),
-          RaisedButton(
-            onPressed: () {
-              takePhoto(context);
-            },
-            elevation: 5,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-            child: Text(
-              "Upload Post",
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  displayUploadForm(){
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 5,
-        leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: (){
-          print("Task Cancel");
-          removePost();
-        }),
-        title: Text("New Post",style: TextStyle(color: Colors.black,fontSize: 24),),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: FlatButton(
-              onPressed: (){
-                print("Start");
-                print(uploading);
-                uploading ? null : controlUploadAndSave();
-              },
-              color: Colors.blue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-              child: Text("Post",style: TextStyle(color: Colors.white,fontSize: 15,fontWeight: FontWeight.bold),),
-            ),
-          )
-        ],
-      ),
-      body: ListView(
-        children: <Widget>[
-          uploading ? linearProgress() : Text(""),
-          Container(
-            height: 230,
-            width: MediaQuery.of(context).size.width*0.8,
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: 16/9,
-                child: Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(image: FileImage(file),fit: BoxFit.cover),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 15,),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.black,
-              backgroundImage: CachedNetworkImageProvider(currentUser.url),
-            ),
-            title: TextField(
-              style: TextStyle(
-                color: Colors.black,
-
-              ),
-              decoration: InputDecoration(
-                focusColor: Colors.black,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
-                enabledBorder: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                hintText: "Enter Caption",
-              ),
-              controller: captionEditionController,
-            ),
-
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.location_on,size: 40,),
-
-            title: TextField(
-              style: TextStyle(
-                color: Colors.black,
-
-              ),
-              decoration: InputDecoration(
-                focusColor: Colors.black,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
-                enabledBorder: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                hintText: "Enter Location",
-              ),
-              controller: locationEditionController,
-            ),
-
-          ),
-
-
-        ],
-      ),
-
-
-    );
-  }
-
-
-  @override
-
-
-  Widget build(BuildContext context) {
-    return file==null? displayUploadScreen(): displayUploadForm();
-  }
-}
-
