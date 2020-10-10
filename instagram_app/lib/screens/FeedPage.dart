@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'HomePage.dart';
 
 class FeedPage extends StatefulWidget {
   @override
@@ -8,6 +9,11 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
   @override
   Widget build(BuildContext context) {
-    return Text("This is Feed Page");
+    return RaisedButton(
+      child: Text(currentUser.username),
+      onPressed: (){
+        signOut();
+      },
+    );
   }
 }
