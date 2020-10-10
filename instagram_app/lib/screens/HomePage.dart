@@ -20,6 +20,14 @@ final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
 final auth =FirebaseAuth.instance;
 User currentUser;
+bool isSignedIn = false;
+signOut() {
+  googleSignIn.signOut();
+  auth.signOut();
+
+  isSignedIn = false;
+}
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -27,7 +35,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool isSignedIn = false;
+
   String email;
   String username;
   String profileName;
@@ -186,13 +194,7 @@ class _HomePageState extends State<HomePage> {
     googleSignIn.signIn();
   }
 
-  signOut() {
-    googleSignIn.signOut();
-    auth.signOut();
-    setState(() {
-      isSignedIn = false;
-    });
-  }
+
 
   controlSignIn(GoogleSignInAccount googleSignInAccount) async {
     if (googleSignInAccount != null) {
@@ -588,13 +590,7 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
           body: PageView(
             children: <Widget>[
-//              FeedPage(),
-              RaisedButton(
-                child: Text(currentUser.username),
-                onPressed: (){
-                  signOut();
-                },
-              ),
+              FeedPage(),
               SearchPage(),
               UploadPost(),
               NotificationPage(),
