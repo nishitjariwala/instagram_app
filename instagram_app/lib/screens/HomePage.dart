@@ -601,7 +601,7 @@ class _HomePageState extends State<HomePage> {
               FeedPage(currentUser: currentUser,),
 
               SearchPage(),
-              UploadPage(),
+              UploadPost(),
               NotificationPage(),
               ProfilePage(),
             ],
