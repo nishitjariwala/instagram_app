@@ -13,7 +13,7 @@ class _FeedPageState extends State<FeedPage> {
   @override
   Widget build(BuildContext context) {
     return RaisedButton(
-      child: Text(widget.currentUser.id),
+      child: Text(widget.currentUser.username),
       onPressed: (){
         signOut();
       },

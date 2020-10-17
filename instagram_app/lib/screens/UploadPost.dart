@@ -269,6 +269,6 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
   Widget build(BuildContext context) {
     return image_file == null
         ? displaySelectImageScreen()
-        : image_file == null? circularProgress():displayUploadPostScreen();
+        : image_file == null? circularProgress(): displayUploadPostScreen();
   }
 }

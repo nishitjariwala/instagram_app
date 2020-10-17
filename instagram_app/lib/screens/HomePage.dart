@@ -17,6 +17,7 @@ import 'package:flutter_signin_button/flutter_signin_button.dart';
 import '../User/user.dart';
 import '../widgets/Progress.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
@@ -28,10 +29,14 @@ final StorageReference postImageReference = FirebaseStorage.instance.ref().child
 final auth =FirebaseAuth.instance;
 User currentUser;
 bool isSignedIn = false;
+int flag = 1;
+int pageIndex = 0;
+
 signOut() {
   googleSignIn.signOut();
   auth.signOut();
-
+  pageIndex=0;
+  flag = 1;
   isSignedIn = false;
 }
 
@@ -48,7 +53,8 @@ class _HomePageState extends State<HomePage> {
   String profileName;
   String password;
   bool progress = false;
-  int flag = 1;
+  bool startProgress = false;
+
 
   final GlobalKey<FormState> _FormKey = GlobalKey<FormState>();
   int pageNum = 0;
@@ -248,176 +254,210 @@ class _HomePageState extends State<HomePage> {
     });
 
   }
+  displayError(context){
+    return showDialog(
+      context: context,
+      builder: (context){
+        return SimpleDialog(
+          title: Column(
+            children: <Widget>[
+              Text("Something Went Wrong Please Try Again"),
+              RaisedButton(
+                child: Text("Ok",style: TextStyle(color: Colors.white),),
+                onPressed: (){
+                  Navigator.pop(context);
+                },
+                color: Colors.blue,
+              ),
+            ],
+          ),
+
+        );
+      }
+    );
+  }
 
 //  TODO: Build Login Screen
   displayLoginScreen() {
-    return SafeArea(
-      child: Scaffold(
-          body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            SliverAppBar(
-              expandedHeight: 100.0,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              floating: false,
-              pinned: true,
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: true,
+    return ModalProgressHUD(
+      inAsyncCall: startProgress,
+      child: SafeArea(
+        child: Scaffold(
+            body: NestedScrollView(
+          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+            return <Widget>[
+              SliverAppBar(
+                expandedHeight: 100.0,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                floating: false,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: true,
+                ),
               ),
-            ),
-          ];
-        },
-        body: SingleChildScrollView(
-          child: Container(
-            child: Center(
-              child: Form(
-                key: _FormKey,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        "Instagram",
-                        style: TextStyle(
-                          fontSize: 70,
-                          color: Colors.black,
-                          fontFamily: 'Billabong',
+            ];
+          },
+          body: SingleChildScrollView(
+            child: Container(
+              child: Center(
+                child: Form(
+                  key: _FormKey,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          "Instagram",
+                          style: TextStyle(
+                            fontSize: 70,
+                            color: Colors.black,
+                            fontFamily: 'Billabong',
+                          ),
                         ),
-                      ),
-                      emailField(),
-                      passwordField(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[],
-                      ),
-                      SizedBox(
-                        height: 30,
-                      ),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: GestureDetector(
-                              child: RaisedButton(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  onPressed: () async {
-                                    setState(() {
-                                      progress = true;
-                                    });
-                                    if (!_FormKey.currentState.validate()) {
-                                      return;
-                                    }
-                                    _FormKey.currentState.save();
-                                    try {
-                                      final user = await auth
-                                          .signInWithEmailAndPassword(
-                                          email: email, password: password);
-                                      if (user != null) {
+                        emailField(),
+                        passwordField(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[],
+                        ),
+                        SizedBox(
+                          height: 30,
+                        ),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: GestureDetector(
+                                child: RaisedButton(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    onPressed: () async {
+                                      setState(() {
+                                        progress = true;
+                                      });
+                                      if (!_FormKey.currentState.validate()) {
+                                        return;
+                                      }
+                                      _FormKey.currentState.save();
+                                      setState(() {
+                                        startProgress=true;
+                                      });
+                                      try {
+                                        final user = await auth
+                                            .signInWithEmailAndPassword(
+                                            email: email, password: password);
+                                        if (user != null) {
 
-                                        var id;
-                                        await userDb.where(
-                                            'email',
-                                            isEqualTo: email
-                                        ).getDocuments().then((event) {
-                                          if (event.documents.isNotEmpty) {
-                                           id = event.documents.single.data['id'];
+                                          var id;
+                                          await userDb.where(
+                                              'email',
+                                              isEqualTo: email
+                                          ).getDocuments().then((event) {
+                                            if (event.documents.isNotEmpty) {
+                                             id = event.documents.single.data['id'];
+                                            }
+
+                                          }).catchError((e) => print("error fetching data: $e"));
+                                          DocumentSnapshot documentSnapshot = await userDb.document(id).get();//if it is a single document
+                                          if(documentSnapshot.exists){
+                                            setState(() {
+                                              currentUser = User.fromDocument(documentSnapshot);
+                                              startProgress = false;
+                                              isSignedIn = true;
+                                            });
                                           }
-
-                                        }).catchError((e) => print("error fetching data: $e"));
-                                        DocumentSnapshot documentSnapshot = await userDb.document(id).get();//if it is a single document
-                                        if(documentSnapshot.exists){
-                                          setState(() {
-                                            currentUser = User.fromDocument(documentSnapshot);
-                                            isSignedIn = true;
-                                          });
                                         }
+
+                                      }
+                                      catch(e){
+                                        setState(() {
+                                          startProgress = false;
+
+                                        });
+                                        displayError(context);
+                                        print(e);
                                       }
 
-                                    }
-                                    catch(e){
-                                      print(e);
-                                    }
 
 
-
-                                  },
-                                  elevation: 2,
-                                  color: Colors.blue,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      "Login",
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 15),
-                                    ),
-                                  )),
-                            ),
-                          )
-                        ],
-                      ),
-                      Separator(),
-                      GestureDetector(
-                        onTap: () {
-                          print("Google Login");
-                          signIn();
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            FaIcon(
-                              FontAwesomeIcons.google,
-                              color: Colors.blue[900],
-                            ),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Text(
-                              "Log in with Google",
-                              style: TextStyle(
-                                  color: Colors.blue[900],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15),
+                                    },
+                                    elevation: 2,
+                                    color: Colors.blue,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "Login",
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 15),
+                                      ),
+                                    )),
+                              ),
                             )
                           ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(color: Colors.black, fontSize: 15),
-                            /*defining default style is optional */
-                            children: <TextSpan>[
-                              TextSpan(
-                                text: "Don't have an account? ",
+                        Separator(),
+                        GestureDetector(
+                          onTap: () {
+                            print("Google Login");
+                            signIn();
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              FaIcon(
+                                FontAwesomeIcons.google,
+                                color: Colors.blue[900],
                               ),
-                              TextSpan(
-                                  text: 'Sign Up',
-                                  style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold),
-                                  recognizer: new TapGestureRecognizer()
-                                    ..onTap = () {
-                                      print("Go to Signup Screen");
-                                      setState(() {
-                                        flag = 0;
-                                      });
-                                    }),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Text(
+                                "Log in with Google",
+                                style: TextStyle(
+                                    color: Colors.blue[900],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15),
+                              )
                             ],
                           ),
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(color: Colors.black, fontSize: 15),
+                              /*defining default style is optional */
+                              children: <TextSpan>[
+                                TextSpan(
+                                  text: "Don't have an account? ",
+                                ),
+                                TextSpan(
+                                    text: 'Sign Up',
+                                    style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold),
+                                    recognizer: new TapGestureRecognizer()
+                                      ..onTap = () {
+                                        print("Go to Signup Screen");
+                                        setState(() {
+                                          flag = 0;
+                                        });
+                                      }),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      )),
+        )),
+      ),
     );
     ;
   }
@@ -425,147 +465,160 @@ class _HomePageState extends State<HomePage> {
   displaySignupScreen() {
     var uuid = Uuid();
     var id = uuid.v4();
-    return SafeArea(
-      child: Scaffold(
-        body: SingleChildScrollView(
-          child: Container(
-            child: Center(
-              child: Form(
-                key: _FormKey,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        "Instagram",
-                        style: TextStyle(
-                          fontSize: 70,
-                          color: Colors.black,
-                          fontFamily: 'Billabong',
-                        ),
-                      ),
-                      Text("Sign up to see photos and videos from your friends.",style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 18,
-
-                        ),
-                      ),
-
-                      SignInButtonBuilder(
-                        text: 'Sign in with Email',
-                        icon: FontAwesomeIcons.google,
-                        onPressed: () {
-                          signIn();
-                        },
-                        backgroundColor: Colors.blue,
-                      ),
-                      Separator(),
-                      emailField(),
-                      nameField(),
-                      usernameField(),
-                      passwordField(),
-
-                      SizedBox(
-                        height: 30,
-                      ),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: GestureDetector(
-                              child: RaisedButton(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  onPressed: () async {
-                                    setState(() {
-                                      progress = true;
-                                    });
-                                    if (!_FormKey.currentState.validate()) {
-                                      return;
-                                    }
-                                    _FormKey.currentState.save();
-
-                                    try {
-                                      final newUser = await auth
-                                          .createUserWithEmailAndPassword(
-                                          email: email, password: password);
-                                      if(newUser!=null){
-                                        userDb.document(id).setData({
-                                          'bio': '',
-                                          'email': email,
-                                          'id': id,
-                                          'profileName': profileName,
-                                          'username': username,
-                                          'url': 'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
-                                          'report': 0,
-                                        });
-                                      }
-                                      if(newUser!=null)
-                                      {
-                                        DocumentSnapshot documentSnapshot = await userDb.document(id).get();
-
-                                        setState(() {
-                                          currentUser = User.fromDocument(documentSnapshot);
-                                          isSignedIn = true;
-                                        });
-                                      }
-
-
-                                    }
-                                    catch(e)
-                                    {
-                                      print(e);
-                                    }
-
-
-
-                                  },
-                                  elevation: 2,
-                                  color: Colors.blue,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      "Sign up",
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 15),
-                                    ),
-                                  ),
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(color: Colors.black, fontSize: 15),
-                            /*defining default style is optional */
-                            children: <TextSpan>[
-                              TextSpan(
-                                text: "Already have an account? ",
-                              ),
-                              TextSpan(
-                                  text: 'Sign in',
-                                  style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold),
-                                  recognizer: new TapGestureRecognizer()
-                                    ..onTap = () {
-                                      print("Go to Signin Screen");
-                                      setState(() {
-                                        flag=1;
-                                      });
-                                    }),
-                            ],
+    return ModalProgressHUD(
+      inAsyncCall: startProgress,
+      child: SafeArea(
+        child: Scaffold(
+          body: SingleChildScrollView(
+            child: Container(
+              child: Center(
+                child: Form(
+                  key: _FormKey,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          "Instagram",
+                          style: TextStyle(
+                            fontSize: 70,
+                            color: Colors.black,
+                            fontFamily: 'Billabong',
                           ),
                         ),
-                      ),
-                      SizedBox(
-                        height: 50,
-                      )
-                    ],
+                        Text("Sign up to see photos and videos from your friends.",style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 18,
+
+                          ),
+                        ),
+
+                        SignInButtonBuilder(
+                          text: 'Sign in with Email',
+                          icon: FontAwesomeIcons.google,
+                          onPressed: () {
+                            signIn();
+                          },
+                          backgroundColor: Colors.blue,
+                        ),
+                        Separator(),
+                        emailField(),
+                        nameField(),
+                        usernameField(),
+                        passwordField(),
+
+                        SizedBox(
+                          height: 30,
+                        ),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: GestureDetector(
+                                child: RaisedButton(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    onPressed: () async {
+                                      setState(() {
+                                        progress = true;
+                                      });
+                                      if (!_FormKey.currentState.validate()) {
+                                        return;
+                                      }
+                                      _FormKey.currentState.save();
+                                      setState(() {
+                                        startProgress=true;
+                                      });
+
+                                      try {
+                                        final newUser = await auth
+                                            .createUserWithEmailAndPassword(
+                                            email: email, password: password);
+                                        if(newUser!=null){
+                                          userDb.document(id).setData({
+                                            'bio': '',
+                                            'email': email,
+                                            'id': id,
+                                            'profileName': profileName,
+                                            'username': username,
+                                            'url': 'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
+                                            'report': 0,
+                                          });
+                                        }
+                                        if(newUser!=null)
+                                        {
+                                          DocumentSnapshot documentSnapshot = await userDb.document(id).get();
+
+                                          setState(() {
+                                            currentUser = User.fromDocument(documentSnapshot);
+                                            startProgress=false;
+                                            isSignedIn = true;
+                                          });
+                                        }
+
+
+                                      }
+                                      catch(e)
+                                      {
+                                        setState(() {
+                                          startProgress=false;
+
+                                        });
+
+                                        displayError(context);
+                                        print(e);
+                                      }
+
+
+
+                                    },
+                                    elevation: 2,
+                                    color: Colors.blue,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "Sign up",
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 15),
+                                      ),
+                                    ),
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(color: Colors.black, fontSize: 15),
+                              /*defining default style is optional */
+                              children: <TextSpan>[
+                                TextSpan(
+                                  text: "Already have an account? ",
+                                ),
+                                TextSpan(
+                                    text: 'Sign in',
+                                    style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold),
+                                    recognizer: new TapGestureRecognizer()
+                                      ..onTap = () {
+                                        print("Go to Signin Screen");
+                                        setState(() {
+                                          flag=1;
+                                        });
+                                      }),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 50,
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -599,11 +652,10 @@ class _HomePageState extends State<HomePage> {
           body: PageView(
             children: <Widget>[
               FeedPage(currentUser: currentUser,),
-
               SearchPage(),
               UploadPost(),
               NotificationPage(),
-              ProfilePage(),
+              ProfilePage(userProfileId: currentUser.id,),
             ],
             controller: pageController,
             onPageChanged: pageChange,
