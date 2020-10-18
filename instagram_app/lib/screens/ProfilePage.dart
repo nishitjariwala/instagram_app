@@ -67,14 +67,14 @@ class _ProfilePageState extends State<ProfilePage> {
         Expanded(
           child: FlatButton(
             padding: EdgeInsets.all(0),
-            color: Colors.grey[100],
+            color: Colors.blue,
 
-            focusColor: Colors.grey,
+            focusColor: Colors.blue,
 
-            child: Text("Following",style: TextStyle(),),
+            child: Text("Follow",style: TextStyle(color: Colors.white),),
             onPressed: (){
               print("Open Edit Profile");
-              Navigator.push(context, MaterialPageRoute(builder: (context)=> EditProfile(user: userProfile,),),);
+
             },
           ),
         ),
@@ -91,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text("Message",style: TextStyle(),),
             onPressed: (){
               print("Open Direct Message");
-              Navigator.push(context, MaterialPageRoute(builder: (context)=> EditProfile(user: userProfile,),),);
+
             },
           ),
         ),
@@ -110,7 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }
           userProfile = User.fromDocument(dataSnapshot.data);
           return Padding(
-            padding: const EdgeInsets.only(left: 20),
+            padding: const EdgeInsets.only(left: 20,right: 20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,7 +279,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       loading = true;
     });
-    QuerySnapshot querySnapshot = await postsDb.document(currentUserId).collection("userPosts").orderBy("timestamp",descending: true).getDocuments();
+    QuerySnapshot querySnapshot = await postsDb.document(widget.userProfileId).collection("userPosts").orderBy("timestamp",descending: true).getDocuments();
     setState(() {
       loading = false;
       postCount = querySnapshot.documents.length;
