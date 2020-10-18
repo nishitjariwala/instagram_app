@@ -10,10 +10,11 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
+  String name = currentUser.profileName;
   @override
   Widget build(BuildContext context) {
     return RaisedButton(
-      child: Text(widget.currentUser.username),
+      child: Text("Welcome $name click to Sign out"),
       onPressed: (){
         signOut();
       },
