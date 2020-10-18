@@ -80,8 +80,8 @@ class _EditProfileState extends State<EditProfile> {
                decoration: InputDecoration(
                  filled: true,
                  fillColor: Colors.white,
-                 hintText: 'Profile Name',
-                 labelText: 'Profile Name',
+                 hintText: 'Bio',
+                 labelText: 'Enter Bio',
                  contentPadding:
                  const EdgeInsets.only(left: 14.0, bottom: 8.0, top: 8.0),
                  focusedBorder: OutlineInputBorder(

@@ -22,6 +22,11 @@ import 'package:modal_progress_hud/modal_progress_hud.dart';
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
 final postsDb = Firestore.instance.collection("posts");
+final activityDb = Firestore.instance.collection("notifications");
+final commentsReference = Firestore.instance.collection('comments');
+final followersDb = Firestore.instance.collection('followers');
+final followingDb = Firestore.instance.collection('following');
+
 
 
 final StorageReference postImageReference = FirebaseStorage.instance.ref().child("posts");
@@ -42,6 +47,7 @@ signOut() {
 
 
 class HomePage extends StatefulWidget {
+
   @override
   _HomePageState createState() => _HomePageState();
 }
