@@ -658,7 +658,7 @@ class _HomePageState extends State<HomePage> {
           body: PageView(
             children: <Widget>[
               FeedPage(currentUser: currentUser,),
-              SearchPage(),
+              SearchPage(currentUser: currentUser,),
               UploadPost(),
               NotificationPage(),
               ProfilePage(userProfileId: currentUser.id,),
