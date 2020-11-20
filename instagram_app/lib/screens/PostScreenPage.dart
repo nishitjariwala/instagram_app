@@ -27,7 +27,7 @@ class PostScreenPage extends StatelessWidget {
           child: Scaffold(
             appBar: AppBar(
               title: Text("Post"),
-              backgroundColor: Colors.blue,
+              backgroundColor: Colors.white,
             ),
             body: ListView(
               children: <Widget>[

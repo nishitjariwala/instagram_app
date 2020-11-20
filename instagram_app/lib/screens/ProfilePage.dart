@@ -8,7 +8,7 @@ import 'EditProfile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/Post.dart';
 import '../widgets/PostTileWidget.dart';
-
+import 'ChatScreen.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userProfileId;
@@ -28,9 +28,17 @@ class _ProfilePageState extends State<ProfilePage> {
   int postCount = 0;
   int followerCount=0;
   int followingCount = 0;
-  bool following = false;
+  bool following;
 
+  signOut() {
+    googleSignIn.signOut();
+    auth.signOut();
+    setState(() {
+      isSignedIn = false;
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
 
+    });
+  }
 
   columnBuilder({String title, int count}){
     return Column(
@@ -41,6 +49,42 @@ class _ProfilePageState extends State<ProfilePage> {
         Text(title,style: TextStyle(fontSize: 13,color: Colors.black,),),
       ],
     );
+  }
+  unfollowUser(){
+    setState(() {
+      following=false;
+    });
+
+    followersDb.document(widget.userProfileId).collection("userFollower").document(currentUserId).get().then((document){
+      if(document.exists){
+        document.reference.delete();
+      }
+    });
+    followingDb.document(currentUserId).collection("userFollowing").document(widget.userProfileId).get().then((document){
+      if(document.exists){
+        document.reference.delete();
+      }
+    });
+    activityDb.document(widget.userProfileId).collection("feedItems").document(currentUserId).get().then((document){
+      if(document.exists){
+        document.reference.delete();
+      }
+    });
+  }
+  followUser(){
+    setState(() {
+      following=true;
+    });
+    followersDb.document(widget.userProfileId).collection("userFollower").document(currentUserId).setData({});
+    followingDb.document(currentUserId).collection("userFollowing").document(widget.userProfileId).setData({});
+    activityDb.document(widget.userProfileId).collection("feedItems").document(currentUserId).setData({
+      "type" : "follow",
+      "timestamp" : DateTime.now(),
+      "ownerId": widget.userProfileId,
+      "userProfileImage": currentUser.url,
+      "userId": currentUser.id,
+      "username": currentUser.username,
+    });
   }
   displayEditButton(){
     return Padding(
@@ -67,13 +111,25 @@ class _ProfilePageState extends State<ProfilePage> {
         Expanded(
           child: FlatButton(
             padding: EdgeInsets.all(0),
-            color: Colors.blue,
+            color: following ? Colors.grey[200] : Colors.blue,
 
-            focusColor: Colors.blue,
+            focusColor: following ? Colors.blue : Colors.grey,
 
-            child: Text("Follow",style: TextStyle(color: Colors.white),),
+            child: following? Text("Following",style: TextStyle(color: Colors.black),):Text("Follow",style: TextStyle(color: Colors.white),),
             onPressed: (){
-              print("Open Edit Profile");
+              if(following){
+                unfollowUser();
+                setState(() {
+                  followerCount=followerCount - 1;
+                });
+
+              }
+              else{
+                followUser();
+                setState(() {
+                  followerCount=followerCount+1;
+                });
+              }
 
             },
           ),
@@ -91,6 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text("Message",style: TextStyle(),),
             onPressed: (){
               print("Open Direct Message");
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>ChatScreen(widget.userProfileId, userProfile.url, userProfile.profileName),),);
 
             },
           ),
@@ -152,12 +209,11 @@ class _ProfilePageState extends State<ProfilePage> {
   void handleClick(String value) {
     switch (value) {
       case 'Logout':
+        print("logout");
         signOut();
 
     }
   }
-
-
 
   buildGridOrListView(){
     return Row(
@@ -311,8 +367,9 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text("Profile"),
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: isOwner ? false: true,
         actions: <Widget>[
-          PopupMenuButton<String>(
+          currentUser.id==widget.userProfileId? PopupMenuButton<String>(
             onSelected: handleClick,
             itemBuilder: (BuildContext context) {
               return {'Logout'}.map((String choice) {
@@ -322,7 +379,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 );
               }).toList();
             },
-          ),
+          ):Text(""),
         ],
       ),
       body: ListView(

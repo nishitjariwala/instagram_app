@@ -105,6 +105,8 @@ class _EditProfileState extends State<EditProfile> {
                      "profileName": nameEdittingController.text,
                      "bio": bioEdittingController.text,
                    });
+
+
                    Navigator.pop(context);
                  }
                },
