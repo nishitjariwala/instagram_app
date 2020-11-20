@@ -24,7 +24,7 @@ class _SearchPageState extends State<SearchPage> with AutomaticKeepAliveClientMi
   }
 
   controlSearching(String str){
-    Future<QuerySnapshot> allUser = userDb.where('profileName' ,isGreaterThanOrEqualTo: str).getDocuments();
+    Future<QuerySnapshot> allUser = userDb.where('username' ,isGreaterThanOrEqualTo: str).getDocuments();
     setState(() {
       futureSearchResult = allUser;
     });
@@ -33,6 +33,7 @@ class _SearchPageState extends State<SearchPage> with AutomaticKeepAliveClientMi
   Widget searchAppBar(){
 
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
       title: TextFormField(
         style: TextStyle(fontSize: 18,color: Colors.black),
@@ -44,8 +45,11 @@ class _SearchPageState extends State<SearchPage> with AutomaticKeepAliveClientMi
               borderSide: BorderSide(
                 color: Colors.grey,
               ),
+              borderRadius: BorderRadius.circular(300),
             ),
             focusedBorder: UnderlineInputBorder(
+              borderRadius: BorderRadius.circular(300),
+
               borderSide: BorderSide(
                 color: Colors.black,
               ),

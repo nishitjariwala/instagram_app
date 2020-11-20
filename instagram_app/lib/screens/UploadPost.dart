@@ -113,15 +113,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
     );
   }
 
-  compressPhoto()async{
-    final dir = await getTemporaryDirectory();
-    final path = dir.path;
-    ImD.Image imageFile = ImD.decodeImage(image_file.readAsBytesSync());
-    final compressedImage = File('$path/img_$postId')..writeAsBytesSync(ImD.encodeJpg(imageFile,quality: 90));
-    setState(() {
-      image_file=compressedImage;
-    });
-  }
+
 
   Future<String> uploadPhoto(file)async{
 

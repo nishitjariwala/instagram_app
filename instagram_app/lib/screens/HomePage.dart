@@ -18,14 +18,17 @@ import '../User/user.dart';
 import '../widgets/Progress.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userDb = Firestore.instance.collection("user");
 final postsDb = Firestore.instance.collection("posts");
 final activityDb = Firestore.instance.collection("notifications");
-final commentsReference = Firestore.instance.collection('comments');
+final commentsDb = Firestore.instance.collection('comments');
 final followersDb = Firestore.instance.collection('followers');
 final followingDb = Firestore.instance.collection('following');
+final feedDb = Firestore.instance.collection('timeline');
+
 
 
 
@@ -35,15 +38,9 @@ final auth =FirebaseAuth.instance;
 User currentUser;
 bool isSignedIn = false;
 int flag = 1;
-int pageIndex = 0;
+FirebaseMessaging firebaseMessaging = FirebaseMessaging();
 
-signOut() {
-  googleSignIn.signOut();
-  auth.signOut();
-  pageIndex=0;
-  flag = 1;
-  isSignedIn = false;
-}
+
 
 
 class HomePage extends StatefulWidget {
@@ -63,9 +60,21 @@ class _HomePageState extends State<HomePage> {
 
 
   final GlobalKey<FormState> _FormKey = GlobalKey<FormState>();
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   int pageNum = 0;
   int pageIndex = 0;
   PageController pageController;
+
+  Future<void> signOut() async{
+    googleSignIn.signOut();
+    auth.signOut();
+    setState(() {
+      isSignedIn = false;
+
+    });
+  }
+
+
 
 //  TODO: For Login & Signup Page
   bool isEmail(String value) {
@@ -251,6 +260,8 @@ class _HomePageState extends State<HomePage> {
           'report': 0,
         });
       }
+      await followersDb.document(currentUser.id).collection("userFollowers").document(currentUser.id).setData({});
+
       documentSnapshot = await userDb.document(googleSignInAccount.id).get();
     }
 
@@ -283,6 +294,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  configurePushNotification(){
+    final User cUser = currentUser;
+    firebaseMessaging.getToken().then((token){
+      userDb.document(cUser.id).updateData({
+        "androidNotificationToken": token
+      });
+    });
+    firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> msg) async{
+        final String recipientId = msg["data"]["recipient"];
+        final String body = msg["notification"]["body"];
+
+        if(recipientId == currentUser.id){
+          SnackBar snackbar = SnackBar(
+            backgroundColor: Colors.grey[200],
+            content: Text(body,style: TextStyle(color: Colors.black),overflow: TextOverflow.ellipsis,),
+          );
+          scaffoldKey.currentState.showSnackBar(snackbar);
+        }
+      }
+    );
+  }
+
 //  TODO: Build Login Screen
   displayLoginScreen() {
     return ModalProgressHUD(
@@ -293,6 +327,7 @@ class _HomePageState extends State<HomePage> {
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return <Widget>[
               SliverAppBar(
+                automaticallyImplyLeading: false,
                 expandedHeight: 100.0,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -351,6 +386,7 @@ class _HomePageState extends State<HomePage> {
                                         startProgress=true;
                                       });
                                       try {
+                                        print(email);
                                         final user = await auth
                                             .signInWithEmailAndPassword(
                                             email: email, password: password);
@@ -373,6 +409,7 @@ class _HomePageState extends State<HomePage> {
                                               startProgress = false;
                                               isSignedIn = true;
                                             });
+                                            configurePushNotification();
                                           }
                                         }
 
@@ -554,13 +591,16 @@ class _HomePageState extends State<HomePage> {
                                         }
                                         if(newUser!=null)
                                         {
+                                          await followersDb.document(currentUser.id).collection("userFollowers").document(currentUser.id).setData({});
                                           DocumentSnapshot documentSnapshot = await userDb.document(id).get();
 
                                           setState(() {
+
                                             currentUser = User.fromDocument(documentSnapshot);
                                             startProgress=false;
                                             isSignedIn = true;
                                           });
+                                          configurePushNotification();
                                         }
 
 
@@ -646,21 +686,19 @@ class _HomePageState extends State<HomePage> {
         duration: Duration(microseconds: 400), curve: Curves.bounceInOut);
   }
 
-  void dispose() {
-    pageController.dispose();
-    super.dispose();
-  }
+
 
 //  TODO: Build HomeScreen Or Navigation Bar
   displayHomeScreen() {
-    return currentUser==null? circularProgress() :SafeArea(
+    return currentUser.id==null? circularProgress(): SafeArea(
       child: Scaffold(
+        key: scaffoldKey,
           body: PageView(
             children: <Widget>[
               FeedPage(currentUser: currentUser,),
               SearchPage(currentUser: currentUser,),
               UploadPost(),
-              NotificationPage(),
+              NotificationsPage(),
               ProfilePage(userProfileId: currentUser.id,),
             ],
             controller: pageController,
@@ -702,8 +740,13 @@ class _HomePageState extends State<HomePage> {
         .then((googleSignInAccount) {
       controlSignIn(googleSignInAccount);
     }).catchError((error) {
-      print("error" + error);
+      print(error.toString());
     });
+  }
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+
   }
 
   @override
