@@ -5,6 +5,7 @@ import '../widgets/Post.dart';
 import '../widgets/Progress.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 class FeedPage extends StatefulWidget {
   final User currentUser;
   FeedPage({this.currentUser});
@@ -77,7 +78,7 @@ class _FeedPageState extends State<FeedPage> {
     }
     print("Post List");
     print(postLists);
-    
+
   }
 
   @override
@@ -89,13 +90,38 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   createFeed() {
-    if (posts == null) {
-      return circularProgress();
-    } else {
-      return ListView(
-        children: posts,
-      );
-    }
+    return StreamBuilder(
+      stream: postsDb.document("6de2faee-8620-46fe-8a03-b2a642951589").collection("userPosts").snapshots(),
+      builder: (context,snapshot){
+        if(!snapshot.hasData){
+          return circularProgress();
+        }
+        final post = snapshot.data.documents;
+
+        for (var p in post){
+          final timestamp=p.data['timestamp'];
+          final post_url=p.data['post_url'];
+          final username=p.data['username'];
+          final ownerId=p.data['ownerId'];
+          final location=p.data['location'];
+          final likes=p.data['likes'];
+          final description=p.data['description'];
+          final postId=p.data['postId'];
+          final Post postDisplay =Post(timestamp: timestamp,post_url: post_url,username: username,ownerId: ownerId,location: location,likes: likes,description: description,postId: postId,);
+          posts.add(postDisplay);
+
+        }
+        return Expanded(
+          child: ListView(
+            reverse: true,
+            children: posts,
+            //children: textWidgets,
+          ),
+        );
+      },
+
+
+    );
   }
 
   @override
@@ -133,7 +159,7 @@ class _FeedPageState extends State<FeedPage> {
         ),
       ),
       body: posts==null?circularProgress():ListView(
-        children: posts,
+        children:posts
       ),
 
     );

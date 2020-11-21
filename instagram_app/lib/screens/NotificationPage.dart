@@ -33,6 +33,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         automaticallyImplyLeading: false,
       ),
       body: Container(
+        color: Colors.grey[200],
         child: FutureBuilder(
           future: retriveNotification(),
           builder: (context,dataSnapshot){
@@ -92,7 +93,7 @@ class NotificationsItem extends StatelessWidget {
     if(type=="comment" || type=="like"){
       mediaPreview = GestureDetector(
         onTap: (){
-          Navigator.push(context, MaterialPageRoute(builder: (context)=>PostScreenPage(postId: postId,userId: userId,),),);
+//          Navigator.push(context, MaterialPageRoute(builder: (context)=>PostScreenPage(postId: postId,userId: userId,),),);
         },
         child: Container(
           height: 50,
