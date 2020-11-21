@@ -28,29 +28,23 @@ final commentsDb = Firestore.instance.collection('comments');
 final followersDb = Firestore.instance.collection('followers');
 final followingDb = Firestore.instance.collection('following');
 final feedDb = Firestore.instance.collection('timeline');
+final chatDb = Firestore.instance.collection('chat');
 
+final StorageReference postImageReference =
+    FirebaseStorage.instance.ref().child("posts");
 
-
-
-final StorageReference postImageReference = FirebaseStorage.instance.ref().child("posts");
-
-final auth =FirebaseAuth.instance;
+final auth = FirebaseAuth.instance;
 User currentUser;
 bool isSignedIn = false;
 int flag = 1;
 FirebaseMessaging firebaseMessaging = FirebaseMessaging();
 
-
-
-
 class HomePage extends StatefulWidget {
-
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-
   String email;
   String username;
   String profileName;
@@ -58,23 +52,19 @@ class _HomePageState extends State<HomePage> {
   bool progress = false;
   bool startProgress = false;
 
-
   final GlobalKey<FormState> _FormKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   int pageNum = 0;
   int pageIndex = 0;
   PageController pageController;
 
-  Future<void> signOut() async{
+  signOut() {
     googleSignIn.signOut();
     auth.signOut();
     setState(() {
       isSignedIn = false;
-
     });
   }
-
-
 
 //  TODO: For Login & Signup Page
   bool isEmail(String value) {
@@ -154,9 +144,7 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: TextFormField(
         keyboardType: TextInputType.emailAddress,
-
         decoration: new InputDecoration(
-
           filled: true,
           fillColor: Colors.white,
           hintText: 'Username',
@@ -222,8 +210,6 @@ class _HomePageState extends State<HomePage> {
     googleSignIn.signIn();
   }
 
-
-
   controlSignIn(GoogleSignInAccount googleSignInAccount) async {
     if (googleSignInAccount != null) {
       print(googleSignInAccount.email);
@@ -241,7 +227,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   saveUserInfo() async {
-
     final GoogleSignInAccount googleSignInAccount = googleSignIn.currentUser;
     DocumentSnapshot documentSnapshot =
         await userDb.document(googleSignInAccount.id).get();
@@ -249,7 +234,7 @@ class _HomePageState extends State<HomePage> {
       final username = await Navigator.push(
           context, MaterialPageRoute(builder: (context) => GetUserName()));
       print("print username" + username.toString());
-      if(username!=null){
+      if (username != null) {
         userDb.document(googleSignInAccount.id).setData({
           'id': googleSignInAccount.id,
           'profileName': googleSignInAccount.displayName,
@@ -260,61 +245,74 @@ class _HomePageState extends State<HomePage> {
           'report': 0,
         });
       }
-      await followersDb.document(currentUser.id).collection("userFollowers").document(currentUser.id).setData({});
+      await followersDb
+          .document(currentUser.id)
+          .collection("userFollowers")
+          .document(currentUser.id)
+          .setData({});
 
       documentSnapshot = await userDb.document(googleSignInAccount.id).get();
     }
 
     setState(() {
       currentUser = User.fromDocument(documentSnapshot);
-
     });
-
   }
-  displayError(context){
+
+  displayError(context, String msg, bool showSignout) {
     return showDialog(
-      context: context,
-      builder: (context){
-        return SimpleDialog(
-          title: Column(
-            children: <Widget>[
-              Text("Something Went Wrong Please Try Again"),
-              RaisedButton(
-                child: Text("Ok",style: TextStyle(color: Colors.white),),
-                onPressed: (){
-                  Navigator.pop(context);
-                },
-                color: Colors.blue,
-              ),
-            ],
-          ),
-
-        );
-      }
-    );
+        context: context,
+        builder: (context) {
+          return SimpleDialog(
+            title: Column(
+              children: <Widget>[
+                Text(msg),
+                !showSignout?RaisedButton(
+                  child: Text(
+                     "Ok",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  color: Colors.blue,
+                ):RaisedButton(
+                  child: Text(
+                    "Sign Out",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    signOut();
+                  },
+                  color: Colors.blue,
+                ),
+              ],
+            ),
+          );
+        });
   }
 
-  configurePushNotification(){
+  configurePushNotification() {
     final User cUser = currentUser;
-    firebaseMessaging.getToken().then((token){
-      userDb.document(cUser.id).updateData({
-        "androidNotificationToken": token
-      });
+    firebaseMessaging.getToken().then((token) {
+      userDb.document(cUser.id).updateData({"androidNotificationToken": token});
     });
-    firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> msg) async{
-        final String recipientId = msg["data"]["recipient"];
-        final String body = msg["notification"]["body"];
+    firebaseMessaging.configure(onMessage: (Map<String, dynamic> msg) async {
+      final String recipientId = msg["data"]["recipient"];
+      final String body = msg["notification"]["body"];
 
-        if(recipientId == currentUser.id){
-          SnackBar snackbar = SnackBar(
-            backgroundColor: Colors.grey[200],
-            content: Text(body,style: TextStyle(color: Colors.black),overflow: TextOverflow.ellipsis,),
-          );
-          scaffoldKey.currentState.showSnackBar(snackbar);
-        }
+      if (recipientId == currentUser.id) {
+        SnackBar snackbar = SnackBar(
+          backgroundColor: Colors.grey[200],
+          content: Text(
+            body,
+            style: TextStyle(color: Colors.black),
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+        scaffoldKey.currentState.showSnackBar(snackbar);
       }
-    );
+    });
   }
 
 //  TODO: Build Login Screen
@@ -383,48 +381,50 @@ class _HomePageState extends State<HomePage> {
                                       }
                                       _FormKey.currentState.save();
                                       setState(() {
-                                        startProgress=true;
+                                        startProgress = true;
                                       });
                                       try {
                                         print(email);
                                         final user = await auth
                                             .signInWithEmailAndPassword(
-                                            email: email, password: password);
+                                                email: email,
+                                                password: password);
                                         if (user != null) {
-
                                           var id;
-                                          await userDb.where(
-                                              'email',
-                                              isEqualTo: email
-                                          ).getDocuments().then((event) {
+                                          await userDb
+                                              .where('email', isEqualTo: email)
+                                              .getDocuments()
+                                              .then((event) {
                                             if (event.documents.isNotEmpty) {
-                                             id = event.documents.single.data['id'];
+                                              id = event
+                                                  .documents.single.data['id'];
                                             }
-
-                                          }).catchError((e) => print("error fetching data: $e"));
-                                          DocumentSnapshot documentSnapshot = await userDb.document(id).get();//if it is a single document
-                                          if(documentSnapshot.exists){
+                                          }).catchError((e) => print(
+                                                  "error fetching data: $e"));
+                                          DocumentSnapshot documentSnapshot =
+                                              await userDb
+                                                  .document(id)
+                                                  .get(); //if it is a single document
+                                          if (documentSnapshot.exists) {
                                             setState(() {
-                                              currentUser = User.fromDocument(documentSnapshot);
+                                              currentUser = User.fromDocument(
+                                                  documentSnapshot);
                                               startProgress = false;
                                               isSignedIn = true;
                                             });
                                             configurePushNotification();
                                           }
                                         }
-
-                                      }
-                                      catch(e){
+                                      } catch (e) {
                                         setState(() {
                                           startProgress = false;
-
                                         });
-                                        displayError(context);
+                                        displayError(
+                                            context,
+                                            "Enter Correct Email Or password:-",
+                                            false);
                                         print(e);
                                       }
-
-
-
                                     },
                                     elevation: 2,
                                     color: Colors.blue,
@@ -470,7 +470,8 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.all(8.0),
                           child: RichText(
                             text: TextSpan(
-                              style: TextStyle(color: Colors.black, fontSize: 15),
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 15),
                               /*defining default style is optional */
                               children: <TextSpan>[
                                 TextSpan(
@@ -530,13 +531,13 @@ class _HomePageState extends State<HomePage> {
                             fontFamily: 'Billabong',
                           ),
                         ),
-                        Text("Sign up to see photos and videos from your friends.",style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 18,
-
+                        Text(
+                          "Sign up to see photos and videos from your friends.",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 18,
                           ),
                         ),
-
                         SignInButtonBuilder(
                           text: 'Sign in with Email',
                           icon: FontAwesomeIcons.google,
@@ -550,7 +551,6 @@ class _HomePageState extends State<HomePage> {
                         nameField(),
                         usernameField(),
                         passwordField(),
-
                         SizedBox(
                           height: 30,
                         ),
@@ -559,76 +559,76 @@ class _HomePageState extends State<HomePage> {
                             Expanded(
                               child: GestureDetector(
                                 child: RaisedButton(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    onPressed: () async {
-                                      setState(() {
-                                        progress = true;
-                                      });
-                                      if (!_FormKey.currentState.validate()) {
-                                        return;
-                                      }
-                                      _FormKey.currentState.save();
-                                      setState(() {
-                                        startProgress=true;
-                                      });
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  onPressed: () async {
+                                    setState(() {
+                                      progress = true;
+                                    });
+                                    if (!_FormKey.currentState.validate()) {
+                                      return;
+                                    }
+                                    _FormKey.currentState.save();
+                                    setState(() {
+                                      startProgress = true;
+                                    });
 
-                                      try {
-                                        final newUser = await auth
-                                            .createUserWithEmailAndPassword(
-                                            email: email, password: password);
-                                        if(newUser!=null){
-                                          userDb.document(id).setData({
-                                            'bio': '',
-                                            'email': email,
-                                            'id': id,
-                                            'profileName': profileName,
-                                            'username': username,
-                                            'url': 'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
-                                            'report': 0,
-                                          });
-                                        }
-                                        if(newUser!=null)
-                                        {
-                                          await followersDb.document(currentUser.id).collection("userFollowers").document(currentUser.id).setData({});
-                                          DocumentSnapshot documentSnapshot = await userDb.document(id).get();
-
-                                          setState(() {
-
-                                            currentUser = User.fromDocument(documentSnapshot);
-                                            startProgress=false;
-                                            isSignedIn = true;
-                                          });
-                                          configurePushNotification();
-                                        }
-
-
-                                      }
-                                      catch(e)
-                                      {
-                                        setState(() {
-                                          startProgress=false;
-
+                                    try {
+                                      final newUser = await auth
+                                          .createUserWithEmailAndPassword(
+                                              email: email, password: password);
+                                      if (newUser != null) {
+                                        userDb.document(id).setData({
+                                          'bio': '',
+                                          'email': email,
+                                          'id': id,
+                                          'profileName': profileName,
+                                          'username': username,
+                                          'url':
+                                              'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
+                                          'report': 0,
                                         });
-
-                                        displayError(context);
-                                        print(e);
                                       }
+                                      if (newUser != null) {
+                                        await followersDb
+                                            .document(currentUser.id)
+                                            .collection("userFollowers")
+                                            .document(currentUser.id)
+                                            .setData({});
+                                        DocumentSnapshot documentSnapshot =
+                                            await userDb.document(id).get();
 
+                                        setState(() {
+                                          currentUser = User.fromDocument(
+                                              documentSnapshot);
+                                          startProgress = false;
+                                          isSignedIn = true;
+                                        });
+                                        configurePushNotification();
+                                      }
+                                    } catch (e) {
+                                      setState(() {
+                                        startProgress = false;
+                                      });
 
-
-                                    },
-                                    elevation: 2,
-                                    color: Colors.blue,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        "Sign up",
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 15),
-                                      ),
+                                      displayError(
+                                          context,
+                                          "Already Signed In with this Email:- ",
+                                          false);
+                                      print(e);
+                                    }
+                                  },
+                                  elevation: 2,
+                                  color: Colors.blue,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      "Sign up",
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 15),
                                     ),
+                                  ),
                                 ),
                               ),
                             )
@@ -638,7 +638,8 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.all(8.0),
                           child: RichText(
                             text: TextSpan(
-                              style: TextStyle(color: Colors.black, fontSize: 15),
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 15),
                               /*defining default style is optional */
                               children: <TextSpan>[
                                 TextSpan(
@@ -653,7 +654,7 @@ class _HomePageState extends State<HomePage> {
                                       ..onTap = () {
                                         print("Go to Signin Screen");
                                         setState(() {
-                                          flag=1;
+                                          flag = 1;
                                         });
                                       }),
                               ],
@@ -686,44 +687,74 @@ class _HomePageState extends State<HomePage> {
         duration: Duration(microseconds: 400), curve: Curves.bounceInOut);
   }
 
-
-
 //  TODO: Build HomeScreen Or Navigation Bar
   displayHomeScreen() {
-    return currentUser.id==null? circularProgress(): SafeArea(
-      child: Scaffold(
-        key: scaffoldKey,
-          body: PageView(
-            children: <Widget>[
-              FeedPage(currentUser: currentUser,),
-              SearchPage(currentUser: currentUser,),
-              UploadPost(),
-              NotificationsPage(),
-              ProfilePage(userProfileId: currentUser.id,),
-            ],
-            controller: pageController,
-            onPageChanged: pageChange,
-            physics: NeverScrollableScrollPhysics(),
-          ),
-          bottomNavigationBar: CupertinoTabBar(
-            currentIndex: pageIndex,
-            onTap: pageChangeAnimation,
-            activeColor: Colors.black,
-            inactiveColor: Colors.grey,
-            backgroundColor: Colors.grey[100],
-            items: [
-              BottomNavigationBarItem(icon: Icon(Icons.home)),
-              BottomNavigationBarItem(icon: Icon(Icons.search)),
-              BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline)),
-              pageIndex == 3
-                  ? BottomNavigationBarItem(icon: Icon(Icons.favorite))
-                  : BottomNavigationBarItem(icon: Icon(Icons.favorite_border)),
-              BottomNavigationBarItem(icon: Icon(Icons.person)),
-
-            ],
-            border: Border(top: BorderSide(color: Colors.grey, width: 0.3)),
-          )),
-    );
+    return currentUser.id == null
+        ? circularProgress()
+        : currentUser.report >= 3
+            ? SafeArea(
+              child: Scaffold(
+                  body: Container(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Your Account Has been Disabled",style: TextStyle(color: Colors.purpleAccent,fontSize: 20,),),
+                        FlatButton(
+                          color: Colors.purpleAccent,
+                          child: Text("Signout",style: TextStyle(color: Colors.white),),
+                          onPressed: (){
+                            signOut();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            )
+            : SafeArea(
+                child: Scaffold(
+                    key: scaffoldKey,
+                    body: PageView(
+                      children: <Widget>[
+                        FeedPage(
+                          currentUser: currentUser,
+                        ),
+                        SearchPage(
+                          currentUser: currentUser,
+                        ),
+                        UploadPost(),
+                        NotificationsPage(),
+                        ProfilePage(
+                          userProfileId: currentUser.id,
+                        ),
+                      ],
+                      controller: pageController,
+                      onPageChanged: pageChange,
+                      physics: NeverScrollableScrollPhysics(),
+                    ),
+                    bottomNavigationBar: CupertinoTabBar(
+                      currentIndex: pageIndex,
+                      onTap: pageChangeAnimation,
+                      activeColor: Colors.black,
+                      inactiveColor: Colors.grey,
+                      backgroundColor: Colors.grey[100],
+                      items: [
+                        BottomNavigationBarItem(icon: Icon(Icons.home)),
+                        BottomNavigationBarItem(icon: Icon(Icons.search)),
+                        BottomNavigationBarItem(
+                            icon: Icon(Icons.add_circle_outline)),
+                        pageIndex == 3
+                            ? BottomNavigationBarItem(
+                                icon: Icon(Icons.favorite))
+                            : BottomNavigationBarItem(
+                                icon: Icon(Icons.favorite_border)),
+                        BottomNavigationBarItem(icon: Icon(Icons.person)),
+                      ],
+                      border: Border(
+                          top: BorderSide(color: Colors.grey, width: 0.3)),
+                    )),
+              );
   }
 
   @override
@@ -743,16 +774,18 @@ class _HomePageState extends State<HomePage> {
       print(error.toString());
     });
   }
+
   void dispose() {
     pageController.dispose();
     super.dispose();
-
   }
 
   @override
   Widget build(BuildContext context) {
     return isSignedIn
         ? displayHomeScreen()
-        : flag == 1 ? displayLoginScreen() : displaySignupScreen();
+        : flag == 1
+            ? displayLoginScreen()
+            : displaySignupScreen();
   }
 }

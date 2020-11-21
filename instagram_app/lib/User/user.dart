@@ -7,7 +7,7 @@ class User {
   final String url;
   final String email;
   final String bio;
-  final int report;
+  int report;
 
   User({
     this.id,
