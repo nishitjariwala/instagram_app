@@ -88,6 +88,19 @@ class _FeedPageState extends State<FeedPage> {
     retriveFollowing();
     print(followingLists);
   }
+  noPostPage(){
+    return Scaffold(
+      body: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("No Posts Yet",textAlign: TextAlign.center,)
+          ],
+        ),
+      ),
+    );
+  }
 
   createFeed() {
     return StreamBuilder(
@@ -158,10 +171,99 @@ class _FeedPageState extends State<FeedPage> {
           style: TextStyle(fontFamily: 'Billabong', fontSize: 35),
         ),
       ),
-      body: posts==null?circularProgress():ListView(
+      body: posts==null?noPostPage():ListView(
         children:posts
       ),
 
     );
   }
 }
+
+class FeedPage1 extends StatefulWidget {
+  final User currentUser;
+  FeedPage1(this.currentUser);
+  @override
+  _FeedPage1State createState() => _FeedPage1State();
+}
+
+class _FeedPage1State extends State<FeedPage1> {
+
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+  List<Post> posts;
+  List<String> followingList;
+  retriveFollowing()async{
+    QuerySnapshot querySnapshot = await followingDb.document(widget.currentUser.id).collection("userFollowing").getDocuments();
+    setState(() {
+      followingList = querySnapshot.documents.map((document) => document.documentID).toList();
+    });
+  }
+  retriveTimeline()async{
+    QuerySnapshot querySnapshot = await feedDb.document(widget.currentUser.id).collection("timelinePosts").orderBy("timestamp",descending: true).getDocuments();
+
+    List<Post> allPost = querySnapshot.documents.map((document) => Post.fromDocument(document)).toList();
+    setState(() {
+      this.posts = allPost;
+    });
+  }
+  createUserFeed(){
+    if(posts==null){
+      return circularProgress();
+    }
+    else{
+      return ListView(
+        children: posts,
+      );
+    }
+  }
+
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    retriveFollowing();
+    retriveTimeline();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: scaffoldKey,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.near_me,
+              color: Colors.black,
+            ),
+            onPressed: () {
+              print("Open DM");
+            },
+          )
+        ],
+        leading: GestureDetector(
+            onTap: () {
+              print("Pressed Camera Icon");
+            },
+            child: Icon(
+              Icons.camera_alt,
+              color: Colors.black,
+            )),
+        title: Text(
+          "Instagram",
+          style: TextStyle(fontFamily: 'Billabong', fontSize: 35),
+        ),
+      ),
+      body: RefreshIndicator(
+        child: createUserFeed(),
+        onRefresh: (){
+          retriveTimeline();
+        },
+      ),
+    );
+  }
+}
+
