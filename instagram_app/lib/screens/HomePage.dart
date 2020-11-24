@@ -29,6 +29,7 @@ final followersDb = Firestore.instance.collection('followers');
 final followingDb = Firestore.instance.collection('following');
 final feedDb = Firestore.instance.collection('timeline');
 final chatDb = Firestore.instance.collection('chat');
+final chatListDb = Firestore.instance.collection('chatList');
 
 final StorageReference postImageReference =
     FirebaseStorage.instance.ref().child("posts");

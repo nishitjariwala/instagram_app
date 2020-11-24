@@ -4,6 +4,7 @@ import '../User/user.dart';
 import '../widgets/Post.dart';
 import '../widgets/Progress.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'DirectMessage.dart';
 
 
 class FeedPage extends StatefulWidget {
@@ -144,9 +145,14 @@ class _FeedPageState extends State<FeedPage> {
     print(followingLists);
     return Scaffold(
       key: scaffoldKey,
+      endDrawer: new Container(
+          child: DirectMessage(),
+
+      ),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
+
         actions: <Widget>[
           IconButton(
             icon: Icon(
@@ -155,6 +161,7 @@ class _FeedPageState extends State<FeedPage> {
             ),
             onPressed: () {
               print("Open DM");
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>DirectMessage()));
             },
           )
         ],
