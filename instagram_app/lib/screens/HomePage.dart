@@ -589,6 +589,7 @@ class _HomePageState extends State<HomePage> {
                                               'https://firebasestorage.googleapis.com/v0/b/instagramapp-8a9ce.appspot.com/o/profilepic.jpg?alt=media&token=ac756e64-9010-4e40-988f-c9ead16ad4a4',
                                           'report': 0,
                                         });
+
                                       }
                                       if (newUser != null) {
                                         await followersDb
@@ -694,6 +695,7 @@ class _HomePageState extends State<HomePage> {
         : currentUser.report >= 3
             ? SafeArea(
               child: Scaffold(
+                key: scaffoldKey,
                   body: Container(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -717,9 +719,7 @@ class _HomePageState extends State<HomePage> {
                     key: scaffoldKey,
                     body: PageView(
                       children: <Widget>[
-                        FeedPage(
-                          currentUser: currentUser,
-                        ),
+                        FeedPage(currentUser:currentUser),
                         SearchPage(
                           currentUser: currentUser,
                         ),
@@ -789,3 +789,4 @@ class _HomePageState extends State<HomePage> {
             : displaySignupScreen();
   }
 }
+

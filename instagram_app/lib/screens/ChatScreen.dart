@@ -99,6 +99,11 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
+    if(msg.isEmpty){
+      print("Null Message");
+      return null;
+    }
+
 
     chatDb.document(currentUser.id).collection("receiver").document(widget.userId).collection("messages").add({
       'msg': msg,

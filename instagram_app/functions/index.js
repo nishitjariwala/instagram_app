@@ -11,7 +11,7 @@ exports.onCreateActivityFeedItem = functions.firestore
 .onCreate(async (snapshot, context) =>
 {
     const userId = context.params.userId;
-    const userRef = admin.firestore().doc(`users/${userId}`);
+    const userRef = admin.firestore().doc(`user/${userId}`);
     const doc = await userRef.get();
 
 
@@ -27,22 +27,22 @@ exports.onCreateActivityFeedItem = functions.firestore
         console.log("No token for user, can not send notification.")
     }
 
-    function sendNotification(androidNotificationToken, activityFeedItem)
+    function sendNotification(androidNotificationToken, feedItems)
     {
         let body;
 
-        switch (activityFeedItem.type)
+        switch (feedItems.type)
         {
             case "comment":
-                body = `${activityFeedItem.username} replied: ${activityFeedItem.commentData}`;
+                body = `${feedItems.username} replied: ${feedItems.commentData}`;
                 break;
 
             case "like":
-                body = `${activityFeedItem.username} liked your post`;
+                body = `${feedItems.username} liked your post`;
                 break;
 
             case "follow":
-                body = `${activityFeedItem.username} started following you`;
+                body = `${feedItems.username} started following you`;
                 break;
 
             default:
@@ -74,7 +74,7 @@ exports.onCreateActivityFeedItem = functions.firestore
 
 
 exports.onCreateFollower = functions.firestore
-  .document("/followers/{userId}/userFollowers/{followerId}")
+  .document("/followers/{userId}/userFollower/{followerId}")
   .onCreate(async (snapshot, context) => {
 
     console.log("Follower Created", snapshot.id);
@@ -111,7 +111,7 @@ exports.onCreateFollower = functions.firestore
 //Update Timeline if user unfollow someone
 
   exports.onDeleteFollower = functions.firestore
-  .document("/followers/{userId}/userFollowers/{followerId}")
+  .document("/followers/{userId}/userFollower/{followerId}")
   .onDelete(async (snapshot, context) => {
 
     console.log("Follower Deleted", snapshot.id);
@@ -155,7 +155,7 @@ exports.onCreatePost = functions.firestore
       .firestore()
       .collection("followers")
       .doc(userId)
-      .collection("userFollowers");
+      .collection("userFollower");
 
     const querySnapshot = await userFollowersRef.get();
 
@@ -187,7 +187,7 @@ exports.onUpdatePost = functions.firestore
       .firestore()
       .collection("followers")
       .doc(userId)
-      .collection("userFollowers");
+      .collection("userFollower");
 
     const querySnapshot = await userFollowersRef.get();
 
@@ -223,7 +223,7 @@ exports.onDeletePost = functions.firestore
       .firestore()
       .collection("followers")
       .doc(userId)
-      .collection("userFollowers");
+      .collection("userFollower");
 
     const querySnapshot = await userFollowersRef.get();
 
