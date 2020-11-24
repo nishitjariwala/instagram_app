@@ -104,6 +104,27 @@ class _ChatScreenState extends State<ChatScreen> {
       return null;
     }
 
+    DocumentSnapshot documentSnapshot = await chatListDb.document(currentUser.id).collection("list").document(widget.userId).get();
+    if(!documentSnapshot.exists){
+      print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+
+      print("Not exist");
+      chatListDb.document(currentUser.id).collection("list").document(widget.userId).setData({
+        'url':widget.url,
+        'userId':widget.userId,
+        'name':widget.name,
+      });
+      chatListDb.document(widget.userId).collection("list").document(currentUser.id).setData({
+        'url':currentUser.url,
+        'userId':currentUser.id,
+        'name':currentUser.profileName,
+      });
+    }
+    else{
+      print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+      print("Exist");
+    }
+
 
     chatDb.document(currentUser.id).collection("receiver").document(widget.userId).collection("messages").add({
       'msg': msg,
