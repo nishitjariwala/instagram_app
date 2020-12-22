@@ -27,9 +27,9 @@ final activityDb = Firestore.instance.collection("notifications");
 final commentsDb = Firestore.instance.collection('comments');
 final followersDb = Firestore.instance.collection('followers');
 final followingDb = Firestore.instance.collection('following');
-final feedDb = Firestore.instance.collection('timeline');
 final chatDb = Firestore.instance.collection('chat');
 final chatListDb = Firestore.instance.collection('chatList');
+final feedDb = Firestore.instance.collection('feed');
 
 final StorageReference postImageReference =
     FirebaseStorage.instance.ref().child("posts");
@@ -698,11 +698,13 @@ class _HomePageState extends State<HomePage> {
               child: Scaffold(
                 key: scaffoldKey,
                   body: Container(
+
                     child: Column(
+
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text("Your Account Has been Disabled",style: TextStyle(color: Colors.purpleAccent,fontSize: 20,),),
+                        Text("Your Account Has been Disabled",textAlign: TextAlign.center ,style: TextStyle(color: Colors.purpleAccent,fontSize: 20,),),
                         FlatButton(
                           color: Colors.purpleAccent,
                           child: Text("Signout",style: TextStyle(color: Colors.white),),
