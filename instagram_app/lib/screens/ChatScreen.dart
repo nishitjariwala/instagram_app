@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'HomePage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
+Dio dio = new Dio();
+
+
 
 class ChatScreen extends StatefulWidget {
   final String userId;
@@ -77,11 +81,16 @@ class _ChatScreenState extends State<ChatScreen> {
   sendMessage()async{
     if(!isFriend){
 
-      bool abbusive=true;
 
+      //todo: herer os the Code for Check
 
-//      Here will be the Condition that msg is Abusive pr not and according to that Abbusive will be change
-
+      Dio dio = Dio();
+      Response response = await dio.post("http://192.168.43.151:12345/predict", data: [{"tweet": msg}]);
+      print(response.data["prediction"]);
+      print("<<>>");
+      bool abbusive= response.data["prediction"].toString()=="2"? false:true;
+      print("message is" + msg);
+      print("result is"+ abbusive.toString());
       if(abbusive){
         userDb.document(currentUser.id).updateData({
           'report': currentUser.report+1,

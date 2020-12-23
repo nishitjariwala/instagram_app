@@ -46,6 +46,7 @@ dependencies:
   timeago: ^2.0.27 #time ago
   modal_progress_hud: ^0.1.3
   firebase_core: ^0.4.0
+  dio: ^3.0.10
 
 
 
