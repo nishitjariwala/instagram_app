@@ -105,9 +105,12 @@ class _EditProfileState extends State<EditProfile> {
                      "profileName": nameEdittingController.text,
                      "bio": bioEdittingController.text,
                    });
-
-
-                   Navigator.pop(context);
+                    setState(() {
+                      widget.user.profileName=nameEdittingController.text;
+                      widget.user.bio=bioEdittingController.text;
+                    });
+//Navigator.pop(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
                  }
                },
              )

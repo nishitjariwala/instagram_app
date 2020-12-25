@@ -79,6 +79,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
 
   sendMessage()async{
+    isFriendCheck();
     if(!isFriend){
 
 
